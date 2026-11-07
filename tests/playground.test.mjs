@@ -36,6 +36,11 @@ test("fireworks page selection, ground taps, placement, multiple launches, contr
     removeListener() {},
   });
   w.scrollTo = () => {};
+  let collectionScrolls = 0;
+  w.HTMLElement.prototype.scrollIntoView = function () {
+    if (this.id === "firework-collection") collectionScrolls++;
+  };
+  w.HTMLElement.prototype.scrollTo = () => {};
   globalThis.ResizeObserver = class {
     observe() {}
     disconnect() {}
@@ -183,12 +188,24 @@ test("fireworks page selection, ground taps, placement, multiple launches, contr
       ),
     );
     assert.equal(document.querySelectorAll(".fw-card").length, 14);
+    assert.equal(byLabel("Master volume").value, "2");
+    assert.equal(byLabel("Master volume").max, "2");
+    assert.equal(
+      byLabel("Master volume").getAttribute("aria-valuetext"),
+      "200 percent",
+    );
+    await click(byLabel("Choose a firework"));
+    assert.equal(collectionScrolls, 1);
+    assert.equal(document.activeElement.id, "firework-collection");
+
     assert.equal(__fwAudio.prepared, 0);
     assert.equal(__fwAudio.sounds.length, 0);
     await advance(0.1);
     assert.ok(draws > 0);
     assert.match(document.title, /दीपोत्सव/);
-    for (const f of FIREWORKS.filter((f) => f.id !== "finale" && f.id !== "sparkler")) {
+    for (const f of FIREWORKS.filter(
+      (f) => f.id !== "finale" && f.id !== "sparkler",
+    )) {
       await click(byLabel(`Select ${f.name}`));
       assert.equal(
         byLabel(`Select ${f.name}`).getAttribute("aria-pressed"),

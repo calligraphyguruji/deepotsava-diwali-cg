@@ -8,8 +8,8 @@ export async function playDiyaSound() {
     await context.resume();
     const now = context.currentTime;
     for (const [frequency, volume, delay] of [
-      [660, 0.055, 0],
-      [1320, 0.018, 0.045],
+      [660, 0.11, 0],
+      [1320, 0.036, 0.045],
     ]) {
       const tone = context.createOscillator();
       const gain = context.createGain();

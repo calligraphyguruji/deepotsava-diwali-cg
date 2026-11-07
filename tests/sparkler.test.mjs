@@ -170,7 +170,17 @@ test("sparkler sound uses a looping recording, fades with burnout, pans, mutes a
       return { ...node(), gain: param() };
     }
     createDynamicsCompressor() {
-      return { ...node(), threshold: param(), ratio: param() };
+      return {
+        ...node(),
+        threshold: param(),
+        knee: param(),
+        ratio: param(),
+        attack: param(),
+        release: param(),
+      };
+    }
+    createWaveShaper() {
+      return node();
     }
     createStereoPanner() {
       return { ...node(), pan: param() };
@@ -205,6 +215,8 @@ test("sparkler sound uses a looping recording, fades with burnout, pans, mutes a
     const sound = new SparklerSound();
     assert.equal(made, 0);
     await sound.prepare();
+    assert.equal(sound.master.gain.value, 2);
+    assert.ok(sound.limiter.curve.every((value) => Math.abs(value) < 1));
     assert.equal(sources.length, 0);
     sound.start();
     assert.equal(sound.source.loop, true);

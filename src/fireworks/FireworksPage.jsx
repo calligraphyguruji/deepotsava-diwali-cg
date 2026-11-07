@@ -39,7 +39,7 @@ export default function FireworksPage() {
     [filter, setFilter] = useState("all"),
     [position, setPosition] = useState({ x: 0.5, y: 0.45 });
   const [muted, setMuted] = useState(false),
-    [volume, setVolume] = useState(0.4),
+    [volume, setVolume] = useState(2),
     [low, setLow] = useState(
       () =>
         window.innerWidth < 768 ||
@@ -216,7 +216,8 @@ export default function FireworksPage() {
     setStatus("The night is still. Choose another little spark.");
   }
   const sparkler = useRef(null),
-    stageHost = useRef(null);
+    stageHost = useRef(null),
+    collectionHost = useRef(null);
   const [paletteHost, setPaletteHost] = useState(null),
     [controlsHost, setControlsHost] = useState(null);
   const [sparklerState, setSparklerState] = useState({
@@ -318,9 +319,10 @@ export default function FireworksPage() {
                   <span className="fw-sr-only">Master volume</span>
                   <input
                     aria-label="Master volume"
+                    aria-valuetext={`${Math.round(volume * 100)} percent`}
                     type="range"
                     min="0"
-                    max="1"
+                    max="2"
                     step=".05"
                     value={volume}
                     onChange={(e) => setVolume(Number(e.target.value))}
@@ -396,14 +398,31 @@ export default function FireworksPage() {
           <div className="fw-launch-dock">
             <div className="sparkler-palette-host" ref={setPaletteHost} />
             <div className="fw-dock-main">
-              <div className="fw-current">
+              <button
+                className="fw-current"
+                aria-label="Choose a firework"
+                aria-controls="firework-collection"
+                onClick={() => {
+                  collectionHost.current?.scrollIntoView({
+                    behavior: reduced ? "instant" : "smooth",
+                    block: "start",
+                  });
+                  collectionHost.current?.scrollTo({
+                    top: 0,
+                    behavior: reduced ? "instant" : "smooth",
+                  });
+                  collectionHost.current?.focus({ preventScroll: true });
+                }}
+              >
                 <FireworkPreview id={selected} color={def.color} />
-                <div>
+                <span className="fw-current-meta">
                   <span>READY TO LIGHT</span>
                   <strong>{def.name}</strong>
-                  <small>{def.hindi}</small>
-                </div>
-              </div>
+                  <small>
+                    {selected === "sparkler" ? "Change firework ↗" : def.hindi}
+                  </small>
+                </span>
+              </button>
               <button
                 className="fw-launch"
                 disabled={
@@ -465,7 +484,13 @@ export default function FireworksPage() {
             )}
           </div>
         </section>
-        <aside className="fw-panel" aria-label="Firework selection">
+        <aside
+          className="fw-panel"
+          id="firework-collection"
+          ref={collectionHost}
+          tabIndex={-1}
+          aria-label="Firework selection"
+        >
           <div className="fw-panel-title">
             <span>YOUR FESTIVAL COLLECTION</span>
             <h2>

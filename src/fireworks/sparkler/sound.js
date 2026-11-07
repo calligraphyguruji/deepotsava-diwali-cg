@@ -1,3 +1,4 @@
+import { createFireworkOutput } from "../audioOutput.js";
 // CC0 Ned Bouhalassa recording; synthetic match ignition is identified separately.
 export class SparklerSound {
   constructor() {
@@ -5,7 +6,7 @@ export class SparklerSound {
     this.buffer = null;
     this.source = null;
     this.master = null;
-    this.volume = 0.4;
+    this.volume = 2;
     this.muted = false;
     this.disposed = false;
     this.loading = null;
@@ -22,12 +23,10 @@ export class SparklerSound {
           "Audio is unavailable in this browser. The Fuljhadi remains interactive.",
         );
       this.ctx = new Audio();
-      this.master = this.ctx.createGain();
-      const limiter = this.ctx.createDynamicsCompressor();
-      limiter.threshold.value = -16;
-      limiter.ratio.value = 10;
-      this.master.connect(limiter);
-      limiter.connect(this.ctx.destination);
+      const output = createFireworkOutput(this.ctx);
+      this.master = output.master;
+      this.bus = output.input;
+      this.limiter = output.limiter;
       this.setMix(this.volume, this.muted);
     }
     await this.ctx.resume();
@@ -85,11 +84,11 @@ export class SparklerSound {
     await this.loading;
   }
   setMix(volume, muted) {
-    this.volume = volume;
+    this.volume = Math.max(0, Math.min(2, volume));
     this.muted = muted;
     if (this.master)
       this.master.gain.setTargetAtTime(
-        muted ? 0 : volume,
+        muted ? 0 : this.volume,
         this.ctx.currentTime,
         0.03,
       );
@@ -106,8 +105,8 @@ export class SparklerSound {
     source.connect(gain);
     if (pan) {
       gain.connect(pan);
-      pan.connect(this.master);
-    } else gain.connect(this.master);
+      pan.connect(this.bus);
+    } else gain.connect(this.bus);
     gain.gain.setValueAtTime(0.0001, ctx.currentTime);
     gain.gain.linearRampToValueAtTime(0.45, ctx.currentTime + 0.12);
     source.onended = () => {
@@ -132,7 +131,7 @@ export class SparklerSound {
         (Math.random() * 2 - 1) * Math.exp((-i / samples.length) * 7) * 0.22;
     const match = ctx.createBufferSource();
     match.buffer = ignition;
-    match.connect(this.master);
+    match.connect(this.bus);
     match.onended = () => match.disconnect();
     match.start();
     this.match = match;

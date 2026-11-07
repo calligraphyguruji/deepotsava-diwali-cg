@@ -1314,3 +1314,18 @@
     padding: 4px 16px;
   }
 }
+.fw-current {
+  text-align: left;
+  min-height: 44px;
+}
+.fw-current > .fw-current-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.fw-current-meta > span {
+  font-size: 7px;
+  letter-spacing: 1.6px;
+  color: #a48c69;
+}

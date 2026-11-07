@@ -41,10 +41,10 @@ export default function Music({ notify }) {
         o.stop(ctx.currentTime + duration);
       }
       const tick = () => {
-        note(notes[step++ % notes.length], 1.8, 0.055);
+        note(notes[step++ % notes.length], 1.8, 0.11);
         if (step % 4 === 1) {
-          note(130.81, 3, 0.035);
-          note(196, 3, 0.015);
+          note(130.81, 3, 0.07);
+          note(196, 3, 0.03);
         }
       };
       tick();

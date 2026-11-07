@@ -211,6 +211,7 @@ export default function SparklerScene({
   }, [
     size.width,
     size.height,
+    low,
     camera,
     model,
     gl,

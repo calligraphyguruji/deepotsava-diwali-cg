@@ -441,3 +441,39 @@
     min-height: 38px;
   }
 }
+/* Reserve space for the fixed controls on short phones, keeping the hand in view. */
+@media (max-width: 767px) {
+  .fuljhadi-selected .fw-stage-wrap {
+    height: 56vh;
+    height: min(
+      64svh,
+      calc(
+        100svh - 310px - env(safe-area-inset-top, 0px) -
+          env(safe-area-inset-bottom, 0px)
+      )
+    );
+    min-height: 260px;
+  }
+  .fuljhadi-selected .fw-playback > span {
+    display: none;
+  }
+}
+@media (max-width: 767px) and (max-height: 740px) {
+  .sparkler-heading p {
+    display: none;
+  }
+  .sparkler-burn {
+    width: 150px;
+    left: 8px;
+  }
+}
+@media (max-width: 767px) and (max-height: 640px) {
+  .sparkler-heading {
+    display: none;
+  }
+}
+@media (min-width: 768px) and (max-width: 1023px) and (max-height: 500px) and (pointer: coarse) {
+  .sparkler-heading {
+    display: none;
+  }
+}

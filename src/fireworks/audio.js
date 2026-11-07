@@ -1,3 +1,4 @@
+import { createFireworkOutput } from "./audioOutput.js";
 const SOURCES = {
   sparkler: "/audio/sparkler-recording.wav",
   rocket: "/audio/rocket-recording.mp3",
@@ -24,7 +25,7 @@ export class FireworkAudio {
     this.voices = new Set();
     this.buffers = {};
     this.cache = new Map();
-    this.volume = 0.4;
+    this.volume = 2;
     this.muted = false;
     this.loading = null;
     this.disposed = false;
@@ -39,16 +40,10 @@ export class FireworkAudio {
           "This browser cannot play Web Audio. Visual fireworks are still available.",
         );
       this.ctx = new Audio();
-      this.master = this.ctx.createGain();
-      this.compressor = this.ctx.createDynamicsCompressor();
-      const c = this.compressor;
-      c.threshold.value = -18;
-      c.knee.value = 16;
-      c.ratio.value = 12;
-      c.attack.value = 0.003;
-      c.release.value = 0.2;
-      this.master.connect(c);
-      c.connect(this.ctx.destination);
+      const output = createFireworkOutput(this.ctx);
+      this.master = output.master;
+      this.bus = output.input;
+      this.limiter = output.limiter;
       this.setVolume(this.volume);
     }
     await this.ctx.resume();
@@ -70,7 +65,7 @@ export class FireworkAudio {
     await this.loading;
   }
   setVolume(value) {
-    this.volume = Math.max(0, Math.min(1, value));
+    this.volume = Math.max(0, Math.min(2, value));
     if (this.master)
       this.master.gain.setTargetAtTime(
         this.muted ? 0 : this.volume,
@@ -177,8 +172,8 @@ export class FireworkAudio {
     if (pan) {
       pan.pan.value = (x - 0.5) * 1.7;
       gain.connect(pan);
-      pan.connect(this.master);
-    } else gain.connect(this.master);
+      pan.connect(this.bus);
+    } else gain.connect(this.bus);
     source.onended = () => {
       source.disconnect();
       gain.disconnect();

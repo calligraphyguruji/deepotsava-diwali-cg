@@ -174,6 +174,9 @@ test("audio starts only after preparation; per-type layers, mute, mixing limit, 
         release: param(),
       };
     }
+    createWaveShaper() {
+      return node();
+    }
     createStereoPanner() {
       return { ...node(), pan: param() };
     }
@@ -218,6 +221,12 @@ test("audio starts only after preparation; per-type layers, mute, mixing limit, 
     assert.equal(created, 0);
     await a.prepare();
     assert.equal(created, 1);
+    assert.equal(a.master.gain.value, 2);
+    assert.ok(
+      a.limiter.curve.every(
+        (value) => Number.isFinite(value) && Math.abs(value) < 1,
+      ),
+    );
     assert.equal(starts.length, 0);
     assert.equal(Object.keys(a.buffers).length, 3);
     for (const id of Object.keys(SOUND_PROFILES)) {
