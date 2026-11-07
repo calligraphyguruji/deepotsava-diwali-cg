@@ -188,7 +188,7 @@ test("fireworks page selection, ground taps, placement, multiple launches, contr
     await advance(0.1);
     assert.ok(draws > 0);
     assert.match(document.title, /दीपोत्सव/);
-    for (const f of FIREWORKS.filter((f) => f.id !== "finale")) {
+    for (const f of FIREWORKS.filter((f) => f.id !== "finale" && f.id !== "sparkler")) {
       await click(byLabel(`Select ${f.name}`));
       assert.equal(
         byLabel(`Select ${f.name}`).getAttribute("aria-pressed"),

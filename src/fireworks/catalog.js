@@ -4,11 +4,11 @@ export const FIREWORKS = [
     name: "Fuljhadi",
     hindi: "फुलझड़ी",
     subtitle: "Handheld sparkler",
-    description: "A delicate wand of warm, crackling gold.",
+    description: "A hand-held sparkler for colorful, freehand light painting.",
     zone: "ground",
     duration: 4.5,
     color: "#ffce75",
-    audio: "CC0 sparkler recording",
+    audio: "Looped CC0 sparkler recording + designed match ignition",
   },
   {
     id: "rocket",

@@ -4,3 +4,5 @@ dist/
 
 .test-build/
 .test-fireworks/
+
+.test-sparkler/

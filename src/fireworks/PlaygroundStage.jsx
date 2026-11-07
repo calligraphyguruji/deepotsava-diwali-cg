@@ -12,12 +12,21 @@ export default function PlaygroundStage({
   reduced,
   paused,
   onStats,
+  onFrame,
 }) {
   const canvas = useRef(),
     host = useRef(),
     drag = useRef(false),
     latest = useRef();
-  latest.current = { selected, position, low, reduced, paused, onStats };
+  latest.current = {
+    selected,
+    position,
+    low,
+    reduced,
+    paused,
+    onStats,
+    onFrame,
+  };
   useEffect(() => {
     const c = canvas.current,
       ctx = c.getContext("2d");
@@ -30,7 +39,8 @@ export default function PlaygroundStage({
       background,
       smoke = makeSmoke(),
       slowFrames = 0,
-      adaptiveLow = false;
+      adaptiveLow = false,
+      paintVersion = 0;
     function resize() {
       const r = host.current.getBoundingClientRect();
       width = Math.max(r.width, 1);
@@ -69,6 +79,8 @@ export default function PlaygroundStage({
         selected: opts.selected,
         smokeSprite: smoke,
       });
+      c.__deepotsavaFrame = ++paintVersion;
+      opts.onFrame?.();
       if (t - lastStats > 500) {
         lastStats = t;
         opts.onStats?.({

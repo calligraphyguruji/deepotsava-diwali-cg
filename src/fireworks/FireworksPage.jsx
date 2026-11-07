@@ -1,4 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { Link } from "react-router-dom";
 import { motion, useReducedMotion } from "motion/react";
 import {
@@ -15,6 +22,9 @@ import {
   Check,
   SlidersHorizontal,
   X,
+  Camera,
+  Eraser,
+  Palette,
 } from "lucide-react";
 import { FIREWORKS, BY_ID } from "./catalog";
 import { FireworkEngine } from "./engine";
@@ -22,6 +32,7 @@ import { FireworkAudio } from "./audio";
 import FireworkPreview from "./FireworkPreview";
 import PlaygroundStage from "./PlaygroundStage";
 import "./fireworks.css";
+const SparklerExperience = lazy(() => import("./sparkler/SparklerExperience"));
 export default function FireworksPage() {
   const reduced = useReducedMotion();
   const [selected, setSelected] = useState("rocket"),
@@ -116,6 +127,10 @@ export default function FireworksPage() {
         .catch(() => {});
   }, [paused]);
   async function launch(id = selected, p = position, mode) {
+    if (id === "sparkler" || (id === "multiple" && selected === "sparkler")) {
+      await sparkler.current?.light();
+      return;
+    }
     if (mode === "ground-required") {
       setStatus(
         "This is a ground firework. Tap the lit terrace at the bottom, or press Launch.",
@@ -190,6 +205,7 @@ export default function FireworksPage() {
     } else setMuted(true);
   }
   function stop() {
+    sparkler.current?.restart();
     engine.stop();
     audio.current?.stop();
     setFinaleRunning(false);
@@ -199,10 +215,35 @@ export default function FireworksPage() {
     engine.wake?.();
     setStatus("The night is still. Choose another little spark.");
   }
+  const sparkler = useRef(null),
+    stageHost = useRef(null);
+  const [paletteHost, setPaletteHost] = useState(null),
+    [controlsHost, setControlsHost] = useState(null);
+  const [sparklerState, setSparklerState] = useState({
+    ready: false,
+    burning: false,
+    preparing: false,
+    color: "yellow",
+  });
+  const background = useCallback(
+    () => stageHost.current?.querySelector(".fw-stage canvas"),
+    [],
+  );
+  const refreshSparkler = useCallback(() => sparkler.current?.refresh(), []);
+  const beginSparkler = useCallback(() => {
+    setPaused(false);
+    setFinaleDone(false);
+  }, []);
+  const reportSparkler = useCallback(
+    (snapshot) => setSparklerState(snapshot),
+    [],
+  );
   const def = BY_ID[selected],
     visible = FIREWORKS.filter((f) => filter === "all" || f.zone === filter);
   return (
-    <div className="fw-page">
+    <div
+      className={`fw-page ${selected === "sparkler" ? "fuljhadi-selected" : ""}`}
+    >
       <header className="fw-header">
         <Link to="/" className="fw-home">
           <ArrowLeft size={17} />
@@ -217,9 +258,13 @@ export default function FireworksPage() {
       </header>
       <main className="fw-layout" id="fireworks-main">
         <section className="fw-arena" aria-label="Fireworks playground">
-          <div className="fw-stage-wrap">
+          <div
+            ref={stageHost}
+            className={`fw-stage-wrap ${selected === "sparkler" ? "sparkler-active" : ""}`}
+          >
             <PlaygroundStage
               engine={engine}
+              onFrame={selected === "sparkler" ? refreshSparkler : undefined}
               selected={selected}
               position={position}
               setPosition={setPosition}
@@ -233,6 +278,30 @@ export default function FireworksPage() {
                   setProgress(1 - (engine.finaleUntil - engine.time) / 26);
               }}
             />
+            {selected === "sparkler" && (
+              <Suspense
+                fallback={
+                  <div className="sparkler-loading" role="status">
+                    Preparing the hand-held Fuljhadi…
+                  </div>
+                }
+              >
+                <SparklerExperience
+                  ref={sparkler}
+                  low={low}
+                  reduced={reduced}
+                  paused={paused}
+                  volume={volume}
+                  muted={muted}
+                  background={background}
+                  paletteHost={paletteHost}
+                  controlsHost={controlsHost}
+                  onState={reportSparkler}
+                  notify={setStatus}
+                  onRequestPlay={beginSparkler}
+                />
+              </Suspense>
+            )}
             <div className="fw-settings">
               <div className="fw-volume">
                 <button
@@ -325,6 +394,7 @@ export default function FireworksPage() {
             )}
           </div>
           <div className="fw-launch-dock">
+            <div className="sparkler-palette-host" ref={setPaletteHost} />
             <div className="fw-dock-main">
               <div className="fw-current">
                 <FireworkPreview id={selected} color={def.color} />
@@ -336,32 +406,63 @@ export default function FireworksPage() {
               </div>
               <button
                 className="fw-launch"
-                disabled={loading}
+                disabled={
+                  loading ||
+                  (selected === "sparkler" &&
+                    (!sparklerState.ready ||
+                      sparklerState.burning ||
+                      sparklerState.preparing))
+                }
                 onClick={() => launch()}
               >
                 <Sparkles size={19} />
-                {loading
-                  ? "Preparing sound…"
-                  : selected === "finale"
-                    ? "Start the finale"
-                    : "Launch firework"}
+                {selected === "sparkler"
+                  ? sparklerState.preparing
+                    ? "Preparing sound…"
+                    : sparklerState.burning
+                      ? `Burning · ${Math.ceil(sparklerState.remaining)}s`
+                      : sparklerState.hasLit
+                        ? "Relight Fuljhadi"
+                        : "Light Fuljhadi"
+                  : loading
+                    ? "Preparing sound…"
+                    : selected === "finale"
+                      ? "Start the finale"
+                      : "Launch firework"}
               </button>
             </div>
-            <div className="fw-quick-actions">
-              <button disabled={loading} onClick={() => launch("multiple")}>
-                <Rocket size={16} /> Launch multiple
-              </button>
-              <button disabled={loading} onClick={() => launch("lanterns")}>
-                <Wind size={16} /> Release lanterns
-              </button>
-              <button
-                disabled={loading || finaleRunning}
-                onClick={() => launch("finale")}
-              >
-                <Sparkles size={16} />{" "}
-                {finaleRunning ? "Finale playing…" : "Grand Finale"}
-              </button>
-            </div>
+            {selected === "sparkler" ? (
+              <div className="fw-quick-actions">
+                <button
+                  onClick={() => sparkler.current?.cycleColor()}
+                  aria-label="Change Color"
+                >
+                  <Palette size={16} /> Change color
+                </button>
+                <button onClick={() => sparkler.current?.clear()}>
+                  <Eraser size={16} /> Clear light trails
+                </button>
+                <button onClick={() => sparkler.current?.capture()}>
+                  <Camera size={16} /> Capture celebration
+                </button>
+              </div>
+            ) : (
+              <div className="fw-quick-actions">
+                <button disabled={loading} onClick={() => launch("multiple")}>
+                  <Rocket size={16} /> Launch multiple
+                </button>
+                <button disabled={loading} onClick={() => launch("lanterns")}>
+                  <Wind size={16} /> Release lanterns
+                </button>
+                <button
+                  disabled={loading || finaleRunning}
+                  onClick={() => launch("finale")}
+                >
+                  <Sparkles size={16} />{" "}
+                  {finaleRunning ? "Finale playing…" : "Grand Finale"}
+                </button>
+              </div>
+            )}
           </div>
         </section>
         <aside className="fw-panel" aria-label="Firework selection">
@@ -380,6 +481,7 @@ export default function FireworksPage() {
               <p>{def.description}</p>
             </div>
           </div>
+          <div className="sparkler-controls-host" ref={setControlsHost} />
           <div className="fw-filter" role="group" aria-label="Filter fireworks">
             {[
               ["all", "All sparks"],
@@ -403,14 +505,27 @@ export default function FireworksPage() {
                 aria-pressed={selected === f.id}
                 aria-label={`Select ${f.name}`}
                 onClick={() => {
+                  if (f.id === "sparkler" && selected !== "sparkler")
+                    setSparklerState({
+                      ready: false,
+                      burning: false,
+                      preparing: false,
+                      color: "yellow",
+                    });
                   setSelected(f.id);
                   setStatus(
-                    `${f.name} selected. ${f.zone === "ground" ? "Place it on the terrace." : "Choose a spot in the sky."}`,
+                    f.id === "sparkler"
+                      ? "Fuljhadi selected. Light it, then hold and drag to paint with color."
+                      : `${f.name} selected. ${f.zone === "ground" ? "Place it on the terrace." : "Choose a spot in the sky."}`,
                   );
                 }}
               >
                 <span className="fw-card-zone">
-                  {f.zone === "sky" ? "SKY" : "GROUND"}
+                  {f.id === "sparkler"
+                    ? "HAND-HELD"
+                    : f.zone === "sky"
+                      ? "SKY"
+                      : "GROUND"}
                 </span>
                 <FireworkPreview id={f.id} color={f.color} />
                 <strong>{f.name}</strong>
