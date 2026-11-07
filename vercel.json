@@ -1,0 +1,1 @@
+{ "rewrites": [{ "source": "/fireworks", "destination": "/index.html" }] }
